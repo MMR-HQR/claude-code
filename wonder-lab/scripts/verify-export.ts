@@ -1,6 +1,6 @@
 /**
- * Verify a Wonder Lab family archive outside the app.
- *   npm run verify-export -- path/to/WonderLab-Family-Export-YYYY-MM-DD.zip
+ * Verify a Tinkadoo family archive outside the app.
+ *   npm run verify-export -- path/to/Tinkadoo-Family-Export-YYYY-MM-DD.zip
  * Exit code 0 = intact; 1 = corrupted, missing or tampered files.
  */
 import { readFileSync } from 'node:fs';

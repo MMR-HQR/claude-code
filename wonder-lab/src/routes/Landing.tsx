@@ -15,14 +15,13 @@ export function Landing() {
 
   return (
     <div className="landing">
-      <div className="landing-sky" aria-hidden />
       <div className="landing-card">
-        <p className="eyebrow">A House of Quiet Rage project</p>
-        <h1 className="display">Wonder Lab</h1>
-        <p className="tagline">A place to wonder. A lifetime to remember.</p>
+        <h1 className="lockup-h1"><img src="brand/tinkadoo-wave.webp" alt="Tinkadoo" /></h1>
+        <p className="tagline">Wonder, curiosity, and the whole world at a child’s fingertips.</p>
+        <p className="eyebrow center">A House of Quiet Rage project</p>
         {state === 'setup' && <Setup onDone={() => nav('/parent')} />}
         {state === 'unlock' && <PinGate title="Welcome back" subtitle="Enter your parent PIN to open the family space" onUnlock={() => nav('/parent')} />}
-        <p className="fine"><Link to="/privacy">How Wonder Lab handles your family’s data</Link></p>
+        <p className="fine"><Link to="/privacy">How Tinkadoo handles your family’s data</Link></p>
       </div>
     </div>
   );

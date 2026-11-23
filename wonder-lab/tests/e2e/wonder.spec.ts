@@ -15,7 +15,9 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('north star: four-turn cheek-eye exploration with no typing, then kept and replayed in the journal', async ({ page }) => {
+  if (SHOTS) { await page.goto('/'); await page.waitForTimeout(400); await shot(page, 'landing'); }
   await setupFamily(page);
+  await shot(page, 'parent-home');
   await startSession(page, 'script');
 
   // Onboarding: the guide says it is AI and can be wrong — spoken, not just written.
@@ -23,7 +25,7 @@ test('north star: four-turn cheek-eye exploration with no typing, then kept and 
   expect((await spoken(page))[0]).toMatch(/computer program, not a person/);
   await shot(page, 'child-idle');
 
-  const expectations = [/six small muscles/, /different spots.*eye muscles/s, /pretend idea/, /pretend game, your cheek eye blinks all by itself.*eyelashes/s];
+  const expectations = [/^Ooh, eyes! .*six small muscles/s, /different spots.*eye muscles/s, /pretend idea/, /pretend game, your cheek eye blinks all by itself.*eyelashes/s];
   for (let i = 0; i < 4; i++) {
     await page.getByTestId('wonder-button').click();
     await waitPhase(page, 'listening');
@@ -35,6 +37,7 @@ test('north star: four-turn cheek-eye exploration with no typing, then kept and 
     await page.getByTestId('send').click();
     if (i === 2 && SHOTS) { await waitPhase(page, 'speaking'); await shot(page, 'child-speaking'); }
     await waitPhase(page, 'idle');
+    if (i === 0) await shot(page, 'child-explore');
     const caption = page.getByTestId('caption');
     await expect(caption).toHaveCount(1); // one current reply — never a scrolling chat transcript
     await expect(caption).toHaveText(expectations[i]);
@@ -43,14 +46,14 @@ test('north star: four-turn cheek-eye exploration with no typing, then kept and 
   }
   // Earlier replies are not stacked up on the child screen.
   await expect(page.locator('.wonder-room')).not.toContainText('six small muscles');
-  await expect(page.getByRole('button', { name: 'Keep wondering: ask another question' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Ask TT another question' })).toBeVisible();
   const said = await spoken(page);
   expect(said.length).toBe(5); // intro + four replies were actually spoken
 
   // Parent locks the room; parent area requires the PIN.
   await page.getByRole('button', { name: 'End' }).click();
   await page.getByRole('button', { name: 'End session' }).click();
-  await expect(page.getByRole('heading', { name: 'Wondering time is finished.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'All done exploring for now.' })).toBeVisible();
   await page.getByRole('button', { name: 'Grown-up' }).click();
   await enterPin(page);
   await expect(page.getByRole('heading', { name: 'Keep this Wonder Thread?' })).toBeVisible();
@@ -76,7 +79,7 @@ test('north star: four-turn cheek-eye exploration with no typing, then kept and 
   }))));
   for (const d of durations) expect(d === Infinity || d > 0.3).toBe(true); // webm from MediaRecorder may report Infinity until fully read
   const media = await page.evaluate(async () => {
-    const open = indexedDB.open('wonder-lab');
+    const open = indexedDB.open('tinkadoo');
     const dbh: IDBDatabase = await new Promise((r) => { open.onsuccess = () => r(open.result); });
     const all: Array<{ mimeType: string; byteCount: number; kind: string; state: string }> = await new Promise((r) => { const q = dbh.transaction('media').objectStore('media').getAll(); q.onsuccess = () => r(q.result); });
     return all.filter((m) => m.kind === 'child_audio' && !('synthetic' in m && (m as { synthetic?: boolean }).synthetic));
@@ -100,7 +103,7 @@ test('north star: four-turn cheek-eye exploration with no typing, then kept and 
   if (SHOTS) await shot(page, 'parent-journal');
   await page.getByRole('link', { name: 'Archive', exact: true }).click();
   const [dl] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: /Export everything kept/ }).click()]);
-  expect(dl.suggestedFilename()).toMatch(/^WonderLab-Family-Export-\d{4}-\d{2}-\d{2}\.zip$/);
+  expect(dl.suggestedFilename()).toMatch(/^Tinkadoo-Family-Export-\d{4}-\d{2}-\d{2}\.zip$/);
   const zip = new Uint8Array(readFileSync(await dl.path()));
   const v = await verifyExportZip(zip);
   expect(v.errors).toEqual([]);
@@ -170,7 +173,7 @@ test('“Don’t save” discards the recording, and “Don’t keep” deletes 
   await page.getByRole('button', { name: 'Don\'t save' }).click();
   await waitPhase(page, 'idle');
   const count = () => page.evaluate(async () => {
-    const open = indexedDB.open('wonder-lab');
+    const open = indexedDB.open('tinkadoo');
     const dbh: IDBDatabase = await new Promise((r) => { open.onsuccess = () => r(open.result); });
     return new Promise<number>((r) => { const q = dbh.transaction('media').objectStore('media').count(); q.onsuccess = () => r(q.result); });
   });
@@ -225,7 +228,28 @@ test('speech unavailable: replies still appear as captions with a grown-up note'
   await expect(page.getByText(/Sound isn’t available here/)).toBeVisible();
 });
 
-test('child room at phone width keeps the 96px+ Wonder Button and 44px targets', async ({ page }) => {
+test('explore cards: optional, tappable, and recorded honestly in the journal', async ({ page }) => {
+  await setupFamily(page, { seed: false });
+  await startSession(page, 'script');
+  await waitPhase(page, 'idle');
+  await expect(page.locator('.explore-card')).toHaveCount(0); // nothing offered before a real answer
+  await recordClip(page);
+  await page.getByTestId('send').click();
+  await waitPhase(page, 'idle');
+  const cards = page.locator('.explore-card');
+  await expect(cards).toHaveCount(2);
+  await page.getByRole('button', { name: 'Why do we blink?' }).click();
+  await waitPhase(page, 'idle');
+  await expect(page.getByTestId('caption')).toContainText('Blinking spreads tears');
+  await expect(cards).not.toContainText(['Why do we blink?']);
+  await page.getByRole('button', { name: 'End' }).click();
+  await page.getByRole('button', { name: 'End session' }).click();
+  await page.getByRole('button', { name: 'Grown-up' }).click();
+  await enterPin(page);
+  await expect(page.getByTestId('turn').filter({ hasText: 'Why do we blink?' })).toContainText('tapped an explore idea suggested by TT');
+});
+
+test('child room at phone width keeps the 96px+ mic button and the brand’s 56px tap targets', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 740 });
   await setupFamily(page, { seed: false });
   await startSession(page, 'script');
@@ -234,7 +258,7 @@ test('child room at phone width keeps the 96px+ Wonder Button and 44px targets',
   expect(box!.width).toBeGreaterThanOrEqual(96);
   for (const b of await page.locator('.wonder-room button').all()) {
     const bb = await b.boundingBox();
-    if (bb) { expect(bb.height, await b.innerText()).toBeGreaterThanOrEqual(44); expect(bb.width).toBeGreaterThanOrEqual(44); }
+    if (bb) { expect(bb.height, await b.innerText()).toBeGreaterThanOrEqual(56); expect(bb.width).toBeGreaterThanOrEqual(56); }
   }
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
   expect(overflow).toBe(false);

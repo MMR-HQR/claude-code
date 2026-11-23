@@ -17,7 +17,7 @@ export function AudioClip({ asset, label, download = true }: { asset: MediaAsset
       {url && <audio controls preload="metadata" src={url} aria-label={label} />}
       <span className="clip-meta">{formatDuration(asset.durationMs)} · {asset.ext}{asset.synthetic ? ' · synthetic tone' : ''}</span>
       {download && (
-        <button type="button" className="icon-btn" onClick={() => downloadBytes(asset.bytes, `wonderlab-${asset.id}.${asset.ext}`, asset.mimeType)} aria-label={`Download original recording: ${label}`} title="Download original">
+        <button type="button" className="icon-btn" onClick={() => downloadBytes(asset.bytes, `tinkadoo-${asset.id}.${asset.ext}`, asset.mimeType)} aria-label={`Download original recording: ${label}`} title="Download original">
           <Icon name="download" size={20} />
         </button>
       )}

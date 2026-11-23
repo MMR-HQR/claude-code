@@ -29,7 +29,11 @@ function classify(s: string, seen: Set<Topic>): Topic | null {
   const lashes = any(s, ['eyelash', 'eyelashes', 'lashes']);
   const ownIdea = any(s, ['by itself', 'on its own', 'its own', 'no eyelashes', "doesn't have", 'doesnt have', 'without', 'all by itself']);
 
-  if ((thirdEyeContext || imaginaryEye) && (blink || ownIdea || lashes)) return 'third_eye_blink';
+  // A pretend eye continues only when the child is still talking about IT ("it blinks by itself").
+  // A general question ("why do we blink?") after pretend play is answered as real science.
+  const aboutIt = any(s, ['it', 'its', "it's"]) || ownIdea;
+  if (imaginaryEye && (blink || ownIdea || lashes)) return 'third_eye_blink';
+  if (thirdEyeContext && aboutIt && (blink || ownIdea || lashes)) return 'third_eye_blink';
   if (imaginaryEye) return 'third_eye';
   if (lashes) return 'eyelashes';
   if (blink) return 'blink';
@@ -70,6 +74,27 @@ function replyFor(topic: Topic, seen: Set<Topic>, ageBand: string): Omit<WonderR
   }
 }
 
+/** Brief topic interest, used only on the first answer of a session (never praise of the child). */
+const OPENERS: Partial<Record<Topic, string>> = { eye_move: 'Ooh, eyes!', eyelashes: 'Ooh, eyelashes!', blink: 'Ooh, blinking!', two_eyes: 'Ooh, two eyes!' };
+
+/** Optional next ideas per topic. Already-explored topics are filtered out; at most two are offered. */
+const EXPLORE: Record<Topic, string[]> = {
+  eye_move: ['Why do people have two eyes?', 'Why do we blink?'],
+  two_eyes: ['What if I had a third eye?', 'Why do we have eyelashes?'],
+  third_eye: ['Why do we blink?', 'Why do we have eyelashes?'],
+  third_eye_blink: ['How do my eyes move?', 'Why do we blink?'],
+  eyelashes: ['Why do we blink?', 'How do my eyes move?'],
+  blink: ['Why do we have eyelashes?', 'How do my eyes move?'],
+};
+
+function exploreFor(topic: Topic, seen: Set<Topic>): string[] {
+  const done = new Set([...seen, topic]);
+  return EXPLORE[topic].filter((q) => {
+    const t = classify(norm(q), new Set());
+    return t !== null && !done.has(t);
+  }).slice(0, 2);
+}
+
 export class MockWonderProvider implements ConversationProvider {
   readonly id = 'mock' as const;
 
@@ -83,7 +108,14 @@ export class MockWonderProvider implements ConversationProvider {
     const seen = contextTopics(context);
     const topic = classify(norm(text), seen);
     if (!topic) return { text: UNKNOWN_TEXT, uncertainty: true, provenance: { provider: 'mock', ruleId: 'mock.unknown' } };
-    return { ...replyFor(topic, seen, context.ageBand), provenance: { provider: 'mock', ruleId: `mock.${topic}` } };
+    const base = replyFor(topic, seen, context.ageBand);
+    const opener = seen.size === 0 ? OPENERS[topic] : undefined;
+    return {
+      ...base,
+      text: opener ? `${opener} ${base.text}` : base.text,
+      explore: exploreFor(topic, seen),
+      provenance: { provider: 'mock', ruleId: `mock.${topic}` },
+    };
   }
 }
 

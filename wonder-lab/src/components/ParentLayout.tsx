@@ -28,8 +28,9 @@ export function ParentLayout({ children }: { children: ReactNode }) {
   return (
     <div className="parent-shell">
       <header className="parent-header">
-        <NavLink to="/parent" end className="wordmark" aria-label="Wonder Lab home">
-          <span className="wordmark-dot" aria-hidden /> Wonder Lab
+        <NavLink to="/parent" end className="wordmark" aria-label="Tinkadoo grown-ups home">
+          <svg className="mark" viewBox="0 0 24 24" aria-hidden><path d="M12 2c.7 4.6 3.4 7.3 8 8-4.6.7-7.3 3.4-8 8-.7-4.6-3.4-7.3-8-8 4.6-.7 7.3-3.4 8-8Z" /></svg>
+          Grown-ups
         </NavLink>
         <nav aria-label="Parent">
           <NavLink to="/parent" end>Home</NavLink>
@@ -41,8 +42,8 @@ export function ParentLayout({ children }: { children: ReactNode }) {
       </header>
       <main className="parent-main">{children}</main>
       <footer className="parent-footer">
-        <span>Wonder Lab · A House of Quiet Rage project</span>
-        <span>A place to wonder. A lifetime to remember.</span>
+        <span>Tinkadoo · A House of Quiet Rage project</span>
+        <span>Wonder, curiosity, and the whole world at a child’s fingertips.</span>
       </footer>
     </div>
   );

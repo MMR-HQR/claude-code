@@ -26,8 +26,8 @@ const plugins: PluginOption[] = [
       navigateFallback: 'index.html',
     },
     manifest: {
-      name: 'Wonder Lab',
-      short_name: 'Wonder Lab',
+      name: 'Tinkadoo',
+      short_name: 'Tinkadoo',
       description: 'A place to wonder. A lifetime to remember.',
       theme_color: '#1d1b3a',
       background_color: '#fbf6ec',

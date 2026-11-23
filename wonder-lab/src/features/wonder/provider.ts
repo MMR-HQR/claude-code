@@ -6,6 +6,8 @@ export type WonderReply = {
   suggestedExperiment?: string;
   needsAdult?: boolean;
   uncertainty?: boolean;
+  /** Up to two optional "explore next" ideas, shown as tappable cards. Never spoken as a push to continue. */
+  explore?: string[];
   /** Always present so the UI and archive can say truthfully where a reply came from. */
   provenance: { provider: 'mock' | 'live'; ruleId: string; guardrail?: string };
 };
@@ -24,7 +26,7 @@ export interface SpeechProvider {
 }
 
 export const INTRO_TEXT =
-  "Hi! I'm Wonder Lab. I'm a computer program, not a person, and sometimes I get things wrong. Tap the big button and ask me something you wonder about.";
+  "Hi, I'm TT! I'm a computer program, not a person, and sometimes I get things wrong. Tap the big button and tell me what you're wondering about.";
 
 export const UNKNOWN_TEXT = "This is a practice conversation. Let's ask your grown-up to explore that one together.";
 

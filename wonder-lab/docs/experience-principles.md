@@ -4,7 +4,7 @@ Each principle is tied to where it lives in code and how it is tested.
 
 | Principle | Implementation | Evidence |
 |---|---|---|
-| One obvious control. | Child room has a single 220–340px Wonder Button whose label/icon change with state (Ask! → Done → Keep wondering). Secondary controls appear only in context (Hear it / Do over / Don't save / Send after recording; Hear again / My guess after a reply). | `WonderRoom.tsx`; E2E "phone width" checks ≥96px button and ≥44px targets. |
+| One obvious control. | Child room has a single 200–300px periwinkle mic button with a Wonder Gold ring whose label/icon change with state (Ask TT → Done → Ask again). Secondary controls appear only in context (Hear it / Do over / Don't save / Send after recording; Hear again / My guess after a reply). | `WonderRoom.tsx`; E2E "phone width" checks ≥96px button and ≥56px targets (brand guide). |
 | Voice-first, not a chatbot. | No text input in the child flow. One caption shows only the current reply (text alternative to speech); earlier replies are never stacked. | E2E north star asserts zero inputs and exactly one caption; earlier text absent. |
 | Answer first, at most one invitation. | Mock replies = 1–3 sentence answer + optional `suggestedExperiment`. | Unit: ≤1 question mark per spoken reply. |
 | The child leads. | Provider classifies the *current* question with prior turns as context; pretend can follow science or start cold. | Unit: "child leads" and turn-3/turn-4 tests. |

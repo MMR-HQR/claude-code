@@ -5,7 +5,7 @@ export type Speaker = 'child' | 'parent' | 'ai';
 export type SessionStatus = 'active' | 'paused' | 'ended' | 'expired';
 export type QuestionSource = 'demo_script' | 'parent_typed';
 /** Where the turn's ORIGINAL text came from. There is no speech-to-text in this slice. */
-export type TextSource = 'demo_script' | 'parent_typed' | 'mock_provider' | 'none';
+export type TextSource = 'demo_script' | 'parent_typed' | 'explore_card' | 'mock_provider' | 'none';
 /** Sync lifecycle. This slice never leaves local_only — there is no server yet. */
 export type SyncState = 'local_only' | 'uploading' | 'cloud_saved' | 'backed_up';
 
@@ -72,7 +72,7 @@ export class WonderDB extends Dexie {
   audit!: Table<AuditEvent, string>;
   settings!: Table<Setting, string>;
 
-  constructor(name = 'wonder-lab') {
+  constructor(name = 'tinkadoo') {
     super(name);
     this.version(1).stores({
       families: 'id',

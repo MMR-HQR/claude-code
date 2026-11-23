@@ -1,6 +1,8 @@
-# Wonder Lab
+# Tinkadoo
 
-*A House of Quiet Rage project — A place to wonder. A lifetime to remember.*
+*A House of Quiet Rage project — Wonder, curiosity, and the whole world at a child’s fingertips.*
+
+(The app was built under the working name Tinkadoo; the code folder keeps that name.)
 
 A parent-supervised, voice-first discovery room for children, and a private family
 journal that keeps their actual questions and voices.
@@ -51,9 +53,9 @@ Add to Home Screen from Safari's Share menu to test the installed (standalone) m
 ```bash
 npm run typecheck      # TypeScript, strict
 npm run lint           # ESLint
-npm run test           # Vitest: 86 unit + integration tests (Node + fake IndexedDB)
+npm run test           # Vitest: 90 unit + integration tests (Node + fake IndexedDB)
 npm run build          # production build + service worker
-npm run test:e2e       # Playwright: 7 browser tests, real MediaRecorder on Chromium's fake mic
+npm run test:e2e       # Playwright: 8 browser tests, real MediaRecorder on Chromium's fake mic
 npm run check          # typecheck + lint + test + build
 
 npm run demo:cheek-eye            # scripted north-star conversation in the terminal

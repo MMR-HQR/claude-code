@@ -11,7 +11,7 @@ import { INTRO_TEXT, type WonderTurn } from '../src/features/wonder/provider';
 const ageBand = process.argv[2] ?? '5-6';
 const provider = new MockWonderProvider();
 const prior: WonderTurn[] = [];
-console.log(`\nWonder Lab — practice conversation (age ${ageBand}). Replies are pre-written, not live AI.\n`);
+console.log(`\nTinkadoo — practice conversation (age ${ageBand}). Replies are pre-written, not live AI.\n`);
 console.log(`GUIDE  ${INTRO_TEXT}\n`);
 for (const [i, q] of CHEEK_EYE_SCRIPT.entries()) {
   const r = await provider.respond({ questionText: q, context: { sessionId: 'demo', ageBand, priorTurns: prior } });

@@ -76,6 +76,39 @@ describe('MockWonderProvider — north-star cheek-eye conversation', () => {
     expect(r.provenance.ruleId).toBe('mock.third_eye');
   });
 
+  it('offers at most two explore ideas, never ones already explored, and none for honest unknowns', async () => {
+    const replies = await runScript(CHEEK_EYE_SCRIPT);
+    for (const r of replies) expect((r.explore ?? []).length).toBeLessThanOrEqual(2);
+    expect(replies[0].explore).toEqual(['Why do people have two eyes?', 'Why do we blink?']);
+    expect(replies[1].explore).not.toContain('Why do people have two eyes?');
+    const unknown = await provider.respond({ questionText: 'Why is the sky blue?', context: ctx([]) });
+    expect(unknown.explore ?? []).toHaveLength(0);
+  });
+
+  it('every explore idea is a question the practice guide can actually answer', async () => {
+    for (const r of await runScript(CHEEK_EYE_SCRIPT)) {
+      for (const q of r.explore ?? []) {
+        const a = await provider.respond({ questionText: q, context: ctx([]) });
+        expect(a.text, q).not.toBe(UNKNOWN_TEXT);
+      }
+    }
+  });
+
+  it('“Ooh” interest appears once, on the first answer only — never as praise', async () => {
+    const replies = await runScript(CHEEK_EYE_SCRIPT);
+    expect(replies[0].text).toMatch(/^Ooh, eyes!/);
+    expect(replies[1].text).not.toMatch(/^Ooh/);
+    for (const r of replies) expect(r.text).not.toMatch(/great question|good job|well done|smart/i);
+  });
+
+  it('a general question after pretend play is answered as real science', async () => {
+    const prior: WonderTurn[] = [{ id: 'c', speaker: 'child', text: CHEEK_EYE_SCRIPT[2], createdAt: '' }];
+    const r = await provider.respond({ questionText: 'Why do we blink?', context: ctx(prior) });
+    expect(r.provenance.ruleId).toBe('mock.blink');
+    const lashes = await provider.respond({ questionText: 'Why do we have eyelashes?', context: ctx(prior) });
+    expect(lashes.provenance.ruleId).toBe('mock.eyelashes');
+  });
+
   it('adapts wording for the youngest band', async () => {
     const [young] = await runScript(CHEEK_EYE_SCRIPT, '3-4');
     const [older] = await runScript(CHEEK_EYE_SCRIPT, '7-9');

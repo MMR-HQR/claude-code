@@ -54,7 +54,7 @@ export function SessionSetup() {
         </div>
       </section>
       <section className="card">
-        <h2>How should Wonder Lab know what they asked?</h2>
+        <h2>How should Tinkadoo know what they asked?</h2>
         <p className="muted">This build has no speech recognition: sending a child’s voice to a transcription service is switched off until provider and privacy checks are done.</p>
         <div className="choice-col" role="radiogroup" aria-label="Question source">
           <label className={`choice wide ${mode === 'demo_script' ? 'on' : ''}`}>

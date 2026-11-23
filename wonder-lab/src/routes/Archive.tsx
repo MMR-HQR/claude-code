@@ -122,7 +122,7 @@ export function Archive() {
 
       <section className="card danger-zone">
         <h2>Delete everything on this device</h2>
-        <p>Removes every profile, recording, note and setting stored by Wonder Lab in this browser. Exported archives you saved elsewhere are not affected. This cannot be undone.</p>
+        <p>Removes every profile, recording, note and setting stored by Tinkadoo in this browser. Exported archives you saved elsewhere are not affected. This cannot be undone.</p>
         {!wipeOpen ? <button className="ghost-btn danger" onClick={() => setWipeOpen(true)}>Delete all data…</button> : (
           <form className="inline-form" onSubmit={(e) => { e.preventDefault(); void wipe(); }}>
             <label htmlFor="wipe-pin" className="sr-only">Parent PIN</label>

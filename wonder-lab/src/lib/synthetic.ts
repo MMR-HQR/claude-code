@@ -45,7 +45,7 @@ export async function seedSyntheticFamilyThread(familyId: string): Promise<strin
     const child = await appendTurn({ memoryId, speaker: 'child', speakerLabel: profile.displayName, kind: 'question', originalText: q, textSource: 'demo_script', audioAssetId: assetId, meta: { scriptStep: i + 1 } });
     prior.push({ id: child.id, speaker: 'child', text: q, createdAt: child.createdAt });
     const r = await provider.respond({ questionText: q, context: { sessionId: 'synthetic', ageBand: profile.ageBand, priorTurns: prior } });
-    const ai = await appendTurn({ memoryId, speaker: 'ai', speakerLabel: 'Wonder Lab (practice)', kind: 'answer', originalText: spokenText(r), textSource: 'mock_provider', replyToTurnId: child.id, meta: { provider: 'mock', uncertainty: r.uncertainty, needsAdult: r.needsAdult, suggestedExperiment: r.suggestedExperiment } });
+    const ai = await appendTurn({ memoryId, speaker: 'ai', speakerLabel: 'TT (practice)', kind: 'answer', originalText: spokenText(r), textSource: 'mock_provider', replyToTurnId: child.id, meta: { provider: 'mock', uncertainty: r.uncertainty, needsAdult: r.needsAdult, suggestedExperiment: r.suggestedExperiment } });
     prior.push({ id: ai.id, speaker: 'ai', text: r.text, createdAt: ai.createdAt });
   }
   await keepMemory(memoryId, 'The cheek eye (synthetic demo)');

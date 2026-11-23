@@ -16,11 +16,11 @@ type Phase = 'loading' | 'idle' | 'requesting' | 'listening' | 'review' | 'await
 type RecKind = 'question' | 'guess';
 
 const provider = new MockWonderProvider();
-const AI_LABEL = 'Wonder Lab (practice)';
+const AI_LABEL = 'TT (practice)';
 
 const ERROR_COPY: Record<RecorderErrorCode, { child: string; adult: string }> = {
   denied: { child: 'The microphone is asleep.', adult: 'Microphone permission is off. On iPad: Settings › Apps › Safari › Microphone → Ask or Allow (or the “aA” menu › Website Settings). Then tap Try again.' },
-  insecure: { child: 'The microphone can’t wake up here.', adult: 'Microphones only work on a secure page (https:// or localhost). Open Wonder Lab from its https address.' },
+  insecure: { child: 'The microphone can’t wake up here.', adult: 'Microphones only work on a secure page (https:// or localhost). Open Tinkadoo from its https address.' },
   unsupported: { child: 'This screen can’t record.', adult: 'This browser has no audio recording support. Use Safari on iPadOS or a current Chrome.' },
   no_mic: { child: 'No microphone found.', adult: 'No microphone was detected. Check that one is connected and not disabled.' },
   busy: { child: 'The microphone is busy.', adult: 'Another app may be using the microphone (a call, Voice Memos). Close it and try again.' },
@@ -47,6 +47,9 @@ export function WonderRoom() {
   const [soundOff, setSoundOff] = useState(false);
   const [draftUrl, setDraftUrl] = useState<string>();
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [explore, setExplore] = useState<string[]>([]);
+  const [notSure, setNotSure] = useState(false);
+  const [celebrate, setCelebrate] = useState(false);
 
   const recorder = useRef<AudioRecorder | null>(null);
   const draft = useRef<MediaAsset | null>(null);
@@ -143,6 +146,7 @@ export function WonderRoom() {
     recKind.current = kind;
     setErrCode(null);
     setSaveError(null);
+    setExplore([]);
     setPhase('requesting');
     const r = new AudioRecorder();
     recorder.current = r;
@@ -240,8 +244,11 @@ export function WonderRoom() {
     await answerQuestion(line, line ? 'demo_script' : 'none', line ? asked + 1 : undefined);
   }
 
-  async function answerQuestion(text: string | null, source: 'demo_script' | 'parent_typed' | 'none', scriptStep?: number, parentWillAnswer = false) {
+  async function answerQuestion(text: string | null, source: 'demo_script' | 'parent_typed' | 'explore_card' | 'none', scriptStep?: number, parentWillAnswer = false) {
     if (!session) return;
+    speech.cancel();
+    setExplore([]);
+    setNotSure(false);
     const child = await appendTurn({
       memoryId: session.memoryId, speaker: 'child', speakerLabel: profile?.displayName ?? 'Explorer', kind: 'question',
       originalText: text, textSource: source, audioAssetId: draft.current?.id, meta: scriptStep ? { scriptStep } : undefined,
@@ -262,6 +269,13 @@ export function WonderRoom() {
     });
     lastAi.current = ai;
     await reloadTurns(session.memoryId);
+    setNotSure(!!reply.uncertainty);
+    setExplore(reply.explore ?? []);
+    // Celebrating marks an answer landing (never a reward for the child), and only for real answers.
+    if (!reply.uncertainty && !reply.needsAdult && !reply.provenance.guardrail) {
+      setCelebrate(true);
+      setTimeout(() => setCelebrate(false), 900);
+    }
     await say(spoken);
   }
 
@@ -301,13 +315,12 @@ export function WonderRoom() {
   if (phase === 'locked') {
     return (
       <div className="wonder-room locked-room">
-        <div className="sky" aria-hidden />
         {pinFor === 'leave' ? (
-          <PinGate tone="dark" title="Grown-up unlock" subtitle="Enter your PIN to review this session" onUnlock={() => nav(session ? `/parent/journal/${session.memoryId}` : '/parent', { replace: true })} onCancel={() => setPinFor(null)} />
+          <PinGate title="Grown-up unlock" subtitle="Enter your PIN to review this session" onUnlock={() => nav(session ? `/parent/journal/${session.memoryId}` : '/parent', { replace: true })} onCancel={() => setPinFor(null)} />
         ) : (
           <div className="locked-msg">
-            <div className="moon" aria-hidden />
-            <h1>Wondering time is finished.</h1>
+            <img className="lockup-wave" src="brand/tinkadoo-wave.webp" alt="Tinkadoo" />
+            <h1>All done exploring for now.</h1>
             <button className="adult-chip" onClick={() => setPinFor('leave')}><Icon name="lock" size={18} /> Grown-up</button>
           </div>
         )}
@@ -321,17 +334,16 @@ export function WonderRoom() {
     switch (phase) {
       case 'listening': return { label: 'Done', icon: 'stop', aria: 'Stop recording', on: () => void stopRecording(), disabled: false };
       case 'requesting': return { label: 'Getting ready', icon: 'mic', aria: 'Getting the microphone ready', on: () => undefined, disabled: true };
-      case 'thinking': return { label: 'Thinking', icon: 'bulb', aria: 'Wonder Lab is thinking', on: () => undefined, disabled: true };
+      case 'thinking': return { label: 'Thinking', icon: 'bulb', aria: 'TT is thinking', on: () => undefined, disabled: true };
       case 'loading': return { label: '', icon: 'mic', aria: 'Loading', on: () => undefined, disabled: true };
-      default: return { label: hasAsked ? 'Keep wondering' : 'Ask!', icon: 'mic', aria: hasAsked ? 'Keep wondering: ask another question' : 'Ask a question', on: () => void startRecording('question'), disabled: paused };
+      default: return { label: hasAsked ? 'Ask again' : 'Ask TT', icon: 'mic', aria: hasAsked ? 'Ask TT another question' : 'Ask TT a question', on: () => void startRecording('question'), disabled: paused };
     }
   })();
+  const stateIcon = phase === 'listening' ? 'mic' : phase === 'thinking' ? 'question' : phase === 'speaking' ? (notSure ? 'shrug' : celebrate ? 'star' : 'chat') : null;
   const showBig = phase !== 'review' && phase !== 'error' && phase !== 'awaiting_adult';
 
   return (
     <div className={`wonder-room phase-${phase}`} data-phase={phase}>
-      <div className="sky" aria-hidden />
-
       <header className="adult-strip" aria-label="Grown-up controls">
         <span className="practice-chip" title="Replies are pre-written examples. No live AI. Nothing leaves this device.">Practice mode · not live AI</span>
         <div className="adult-actions">
@@ -345,17 +357,21 @@ export function WonderRoom() {
       </header>
 
       <main className="stage">
+        <div className="stage-main">
+        <img className="lockup-peek" src="brand/tinkadoo-peek.webp" alt="Tinkadoo" />
         <p className="state-word" aria-live="polite">
-          {phase === 'listening' && <>Listening… <span className="timer">{formatDuration(elapsed)}</span></>}
-          {phase === 'thinking' && 'Thinking…'}
-          {phase === 'speaking' && 'Talking'}
+          {stateIcon && <img className="state-icon" src={`brand/icon-${stateIcon}.png`} alt="" aria-hidden />}
+          {phase === 'listening' && <>I’m listening… <span className="timer">{formatDuration(elapsed)}</span></>}
+          {phase === 'thinking' && 'Hmm, let me think…'}
+          {phase === 'speaking' && (notSure ? 'Let’s find out together' : 'TT is talking')}
           {phase === 'review' && 'Your question is saved here'}
-          {phase === 'idle' && !hasAsked && 'Tap and ask anything'}
+          {phase === 'idle' && !hasAsked && 'What are you wondering about?'}
           {phase === 'requesting' && 'Waking the microphone…'}
         </p>
 
         {showBig && (
-          <div className="orb-wrap">
+          <div className={`orb-wrap ${celebrate ? 'celebrate' : ''}`}>
+            {celebrate && <span className="star-burst" aria-hidden>{[0, 1, 2, 3, 4, 5].map((i) => <i key={i} style={{ ['--i' as string]: i }} />)}</span>}
             <div ref={ringRef} className="orb-ring" aria-hidden />
             <button className="wonder-button" onClick={big.on} disabled={big.disabled} aria-label={big.aria} data-testid="wonder-button">
               <Icon name={big.icon} size={64} />
@@ -390,6 +406,8 @@ export function WonderRoom() {
           </div>
         )}
 
+        </div>
+        <div className="stage-side">
         {(phase === 'speaking' || (phase === 'idle' && caption)) && (
           <div className={`caption caption-${captionKind}`} aria-live="polite" data-testid="caption">
             <p>{caption}</p>
@@ -407,7 +425,18 @@ export function WonderRoom() {
             <button className="round-btn small" onClick={() => void startRecording('guess')} aria-label="My guess"><Icon name="bulb" size={28} /><span>My guess</span></button>
           </div>
         )}
+        {phase === 'idle' && explore.length > 0 && (
+          <div className="explore" role="group" aria-label="Explore next (optional)">
+            {explore.map((q) => (
+              <button key={q} className="explore-card" onClick={() => void answerQuestion(q, 'explore_card')}>
+                <img src="brand/icon-question.png" alt="" aria-hidden />
+                <span>{q}</span>
+              </button>
+            ))}
+          </div>
+        )}
         {soundOff && phase !== 'speaking' && <p className="fine on-dark">Sound isn’t available here. A grown-up can read the words aloud.</p>}
+        </div>
       </main>
 
       {phase === 'awaiting_adult' && (
@@ -448,7 +477,7 @@ export function WonderRoom() {
       {paused && (
         <div className="pause-overlay" role="dialog" aria-label="Paused">
           {pinFor === 'resume' ? (
-            <PinGate tone="dark" mode="verify" title="Resume wondering" subtitle="Grown-up PIN" onUnlock={resumeAfterPin} onCancel={() => setPinFor(null)} />
+            <PinGate mode="verify" title="Resume wondering" subtitle="Grown-up PIN" onUnlock={resumeAfterPin} onCancel={() => setPinFor(null)} />
           ) : (
             <div className="locked-msg">
               <Icon name="pause" size={56} />

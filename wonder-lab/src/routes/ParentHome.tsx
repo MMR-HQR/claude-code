@@ -32,7 +32,8 @@ export function ParentHome() {
   return (
     <div className="stack">
       <section className="hero-card">
-        <div>
+        <img className="lockup-peek" src="brand/tinkadoo-peek.webp" alt="Tinkadoo" />
+        <div className="hero-text">
           <p className="eyebrow">{family.name}</p>
           <h1>Ready when they are.</h1>
           <p className="muted">Start a supervised session, hand over the iPad, and stay close. You can pause, answer yourself, or end at any time.</p>

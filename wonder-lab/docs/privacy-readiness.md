@@ -1,6 +1,6 @@
 # Privacy & release readiness — default deny
 
-Nothing below is signed off. Until it is, Wonder Lab is **demo/mock only**. Evidence must be a link to a
+Nothing below is signed off. Until it is, Tinkadoo is **demo/mock only**. Evidence must be a link to a
 document, config screenshot or test run; "reviewer" must be a named human.
 
 | Gate | Check | Status | Evidence | Reviewer | Date |

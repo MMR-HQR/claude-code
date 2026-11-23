@@ -55,7 +55,7 @@ export async function exportFamily(familyId: string, opts: { memoryIds?: string[
   if (!check.ok) throw new Error(`Export failed self-verification: ${check.errors.join('; ')}`);
   await audit(familyId, 'export.created', 'family', familyId);
   const date = new Date().toISOString().slice(0, 10);
-  return { zip, manifest, filename: `WonderLab-Family-Export-${date}.zip`, memoryCount: exMemories.length, mediaCount: exMedia.length };
+  return { zip, manifest, filename: `Tinkadoo-Family-Export-${date}.zip`, memoryCount: exMemories.length, mediaCount: exMedia.length };
 }
 
 /**

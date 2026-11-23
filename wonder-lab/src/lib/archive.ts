@@ -8,7 +8,9 @@
 import { strFromU8, strToU8, unzipSync, zipSync, type Zippable } from 'fflate';
 import { sha256Hex } from './hash';
 
-export const EXPORT_SCHEMA = 'wonder-lab-export';
+export const EXPORT_SCHEMA = 'tinkadoo-export';
+/** Archives written before the rename are still readable. */
+export const LEGACY_SCHEMAS: string[] = ['wonder-lab-export'];
 export const EXPORT_SCHEMA_VERSION = 1;
 
 export interface ExportTurn {
@@ -27,14 +29,14 @@ export interface ExportMedia {
   durationMs: number; capturedAt: string; memoryId: string | null; turnId: string | null; synthetic?: boolean;
 }
 export interface ExportJournal {
-  schema: typeof EXPORT_SCHEMA; schemaVersion: number; exportedAt: string; timezone: string;
+  schema: string; schemaVersion: number; exportedAt: string; timezone: string;
   family: { id: string; name: string };
   profiles: Array<{ id: string; displayName: string; ageBand: string; subjectKind: string }>;
   memories: ExportMemory[]; media: ExportMedia[];
   links: Array<{ sourceMemoryId: string; targetMemoryId: string; relation: string }>;
 }
 export interface ManifestEntry { path: string; sha256: string; byteCount: number }
-export interface Manifest { schema: typeof EXPORT_SCHEMA; schemaVersion: number; createdAt: string; generator: string; files: ManifestEntry[] }
+export interface Manifest { schema: string; schemaVersion: number; createdAt: string; generator: string; files: ManifestEntry[] }
 
 export interface ExportInput { journal: Omit<ExportJournal, 'schema' | 'schemaVersion'>; mediaBytes: Map<string, Uint8Array> }
 
@@ -43,6 +45,7 @@ const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&
 export const SOURCE_LABEL: Record<string, string> = {
   demo_script: 'scripted practice line (synthetic, not speech recognition)',
   parent_typed: 'typed by a grown-up',
+  explore_card: 'tapped an explore idea suggested by TT',
   mock_provider: 'pre-written practice reply (not live AI)',
   none: 'not transcribed — listen to the recording',
 };
@@ -85,12 +88,12 @@ function indexHtml(j: ExportJournal): string {
       return `<section><h2>${esc(m.title)}</h2><p><small>${esc(new Date(m.occurredAt).toLocaleString())} · ${esc(prof(m.profileId))}${m.topics.length ? ' · ' + esc(m.topics.join(', ')) : ''}${m.synthetic ? ' · synthetic demo data' : ''}</small></p><ol>${turns}</ol>${notes ? `<h3>Grown-up notes</h3><ul>${notes}</ul>` : ''}<p><a href="transcripts/${esc(m.id)}.txt">Plain-text transcript</a></p></section>`;
     })
     .join('\n');
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Wonder Lab — ${esc(j.family.name)}</title>
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tinkadoo — ${esc(j.family.name)}</title>
 <style>body{font:16px/1.5 Georgia,serif;max-width:760px;margin:2rem auto;padding:0 1rem;color:#1d1b3a;background:#fbf6ec}h1{font-weight:normal}section{border-top:1px solid #d9cdb4;padding-top:1rem;margin-top:2rem}li{margin:.8rem 0}li.child b{color:#b4462b}li.ai b{color:#3c5a99}li.parent b{color:#2f6f4f}small{color:#6b6478}audio{max-width:100%}</style></head>
-<body><h1>Wonder Lab family archive</h1><p>${esc(j.family.name)} · exported ${esc(new Date(j.exportedAt).toLocaleString())} (${esc(j.timezone)})</p>
-<p><small>Child and grown-up recordings are the original files. Replies marked “pre-written practice reply” came from Wonder Lab’s practice mode, not a live AI. This page works offline; keep it in the same folder as the media/ and transcripts/ folders.</small></p>
+<body><h1>Tinkadoo family archive</h1><p>${esc(j.family.name)} · exported ${esc(new Date(j.exportedAt).toLocaleString())} (${esc(j.timezone)})</p>
+<p><small>Child and grown-up recordings are the original files. Replies marked “pre-written practice reply” came from Tinkadoo’s practice mode, not a live AI. This page works offline; keep it in the same folder as the media/ and transcripts/ folders.</small></p>
 ${memories || '<p>No kept memories in this export.</p>'}
-<footer><p><small>Wonder Lab · A House of Quiet Rage project</small></p></footer></body></html>`;
+<footer><p><small>Tinkadoo · A House of Quiet Rage project</small></p></footer></body></html>`;
 }
 
 const README = (j: ExportJournal) => `WONDER LAB FAMILY ARCHIVE
@@ -133,7 +136,7 @@ export async function buildExportZip(input: ExportInput): Promise<{ zip: Uint8Ar
   const entries: ManifestEntry[] = [];
   for (const [path, bytes] of Object.entries(files)) entries.push({ path, sha256: await sha256Hex(bytes), byteCount: bytes.byteLength });
   entries.sort((a, b) => a.path.localeCompare(b.path));
-  const manifest: Manifest = { schema: EXPORT_SCHEMA, schemaVersion: EXPORT_SCHEMA_VERSION, createdAt: journal.exportedAt, generator: 'Wonder Lab 0.1 (local)', files: entries };
+  const manifest: Manifest = { schema: EXPORT_SCHEMA, schemaVersion: EXPORT_SCHEMA_VERSION, createdAt: journal.exportedAt, generator: 'Tinkadoo 0.1 (local)', files: entries };
   files['manifest.json'] = strToU8(JSON.stringify(manifest, null, 2));
   const zippable: Zippable = {};
   for (const [p, b] of Object.entries(files)) zippable[p] = [b, { level: p.startsWith('media/') ? 0 : 6 }];
@@ -159,7 +162,7 @@ export async function verifyExportZip(zip: Uint8Array): Promise<VerifyResult> {
   } catch {
     return { ok: false, errors: ['manifest.json is not valid JSON'], fileCount: 0, mediaCount: 0, memoryCount: 0 };
   }
-  if (manifest.schema !== EXPORT_SCHEMA) errors.push(`Unknown schema "${manifest.schema}"`);
+  if (manifest.schema !== EXPORT_SCHEMA && !LEGACY_SCHEMAS.includes(manifest.schema)) errors.push(`Unknown schema "${manifest.schema}"`);
   if (manifest.schemaVersion > EXPORT_SCHEMA_VERSION) errors.push(`Archive schema v${manifest.schemaVersion} is newer than this tool (v${EXPORT_SCHEMA_VERSION})`);
   const listed = new Set<string>();
   for (const e of manifest.files ?? []) {
